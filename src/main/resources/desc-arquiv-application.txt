@@ -1,0 +1,42 @@
+1° configurar o comportamento do servidor de configuração. Sim está certo.
+Até um servidor de configuração precisa de configuração! Primeiro de tudo,
+o Spring Cloud Config Server é executado em um servidor Tomcat integrado, para que você
+possa configurar tempos limite de conexão e pools de threads como fez para o Catalog Service.
+
+
+server:
+  port: 8888 #porta do aplicativo onde vai ser executado
+
+  spring:
+    application:
+      name: config-service #Nome para o aplicativo
+
+
+      cloud:
+        config:
+          server:
+            git:
+             #A URL para o repositório Git remoto a ser usado como back-end de dados de configuração.
+             #Por exemplo, https://github.com/PolarBookshop/config-repo.
+             uri: https://github.com/erickksilva/config-repo
+             default-label: main #Por padrão, o servidor retornará dados de configuração da ramificação “main”
+
+No entanto, dimensionar o Config Service não é suficiente. Como está usando um controle remoto
+repositório Git como back-end de dados de configuração, você precisará fazer isso interação mais
+resiliente também. Primeiro, você pode definir um tempo limite para evitar que o servidor de configuração
+espere muito para estabelecer uma conexão com o controle remoto repositório.
+
+Spring Cloud Config é implementado para clonar o repositório remoto localmente
+na primeira solicitação de dados de configuração.
+
+Eu recomendo usar o spring.cloud.config .server.git.clone-on start propriedade para que o clone do repo aconteça na
+inicialização. Embora seja torna a fase de inicialização um pouco mais lenta, faz com que sua implantação
+falhe mais rapidamente se há alguma dificuldade de comunicação com o repositório remoto, em vez ficar
+aguardando a primeira solicitação para descobrir que algo está errado. Além disso, torna a
+primeira solicitação de um cliente mais rápida.
+
+spring.cloud.config.server.git.force-pull para que uma nova cópia seja extraída sempre
+que a cópia local for corrompida e quaisquer alterações locais sejam descartadas. Por padrão, o
+repositório local é clonado em uma pasta com nome aleatório. Se necessário, você pode
+controlar onde ele será clonado por meio da propriedade spring.cloud.config.server.git .basedir .
+Para o Config Service, contaremos com o comportamento padrão.
